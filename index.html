@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VYNL — Mood-Based Music Player</title>
+  <meta name="description" content="Describe your mood and instantly get a playlist of YouTube music to match your vibe." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=2" />
+
+  <!-- ── GOOGLE ADSENSE INTEGRATION (Replace ca-pub-XXXXXXXXXXXXXXXX with your AdSense Publisher ID) ── -->
+  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0000000000000000" crossorigin="anonymous"></script> -->
+</head>
+<body>
+
+  <!-- ── MOOD & FULLSCREEN MUSIC VIDEO BACKGROUND ── -->
+  <div id="bgCanvas" class="bg-canvas">
+    <div id="ytVideoWrap" class="yt-video-wrap hidden">
+      <div id="ytPlayer"></div>
+    </div>
+    <img id="bgImg" class="bg-img" src="cosmic_supernova_bg.jpg" alt="VYNL Cosmic Supernova Background Artwork" />
+
+    <canvas id="rainCanvas" class="rain-canvas"></canvas>
+    <canvas id="mouseTrailCanvas" class="mouse-trail-canvas"></canvas>
+    <div id="bgOverlay" class="bg-overlay"></div>
+
+    <!-- ── HD FULLSCREEN ALBUM ARTWORK CANVAS DISPLAY ── -->
+    <div id="albumArtCanvasWrap" class="album-art-canvas-wrap hidden">
+      <div class="album-art-container">
+        <img id="albumArtDisplayImg" class="album-art-display-img" src="vinyl.jpg" alt="HD Album Artwork Cover" />
+        <div class="album-art-record-spin">
+          <div class="record-center-label">
+            <img id="albumArtCenterLabelImg" src="vinyl.jpg" alt="Vinyl Label" />
+          </div>
+        </div>
+      </div>
+      <div class="album-art-title-block">
+        <h2 id="albumArtSongTitle" class="art-song-title">—</h2>
+        <p id="albumArtArtistName" class="art-artist-name">—</p>
+      </div>
+    </div>
+
+
+
+
+
+    <!-- ── INTERACTIVE MUSIC VIDEO PLAY/PAUSE OVERLAY ── -->
+    <div id="videoPlayOverlay" class="video-play-overlay hidden">
+      <button id="centerPlayBtn" class="center-play-btn" title="Click to Play / Pause Music Video">
+        <svg id="centerPlayIcon" width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+        <svg id="centerPauseIcon" width="40" height="40" viewBox="0 0 24 24" fill="currentColor" class="hidden">
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>
+      </button>
+      <div id="videoStatusRipple" class="video-status-ripple hidden"></div>
+    </div>
+  </div>
+
+  <!-- ── SETUP NOTICE (shown when API key not set) ──── -->
+  <div id="setupBanner" class="setup-banner hidden">
+    <span>⚠️ Add your YouTube API Key to <code>app.js</code> line 8 to enable music search. </span>
+    <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Get a free key →</a>
+    <button id="dismissBanner">✕</button>
+  </div>
+
+  <!-- ── VINTAGE CRT OLD TV SIDE PILLAR BARS ── -->
+  <aside class="tv-side-bar tv-bar-left" title="Vintage TV Bezel">
+    <div id="leftTvBgLayer1" class="bar-bg-layer active"></div>
+    <div id="leftTvBgLayer2" class="bar-bg-layer"></div>
+    <div class="tv-speaker-grille">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="tv-inner-shadow"></div>
+  </aside>
+
+  <aside class="tv-side-bar tv-bar-right" title="Vintage TV Bezel">
+    <div id="rightTvBgLayer1" class="bar-bg-layer active"></div>
+    <div id="rightTvBgLayer2" class="bar-bg-layer"></div>
+    <div class="tv-speaker-grille">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="tv-inner-shadow"></div>
+  </aside>
+
+  <!-- ── HEADER ─────────────────────────────────────── -->
+  <header class="header">
+    <div id="headerBgLayer1" class="bar-bg-layer active"></div>
+    <div id="headerBgLayer2" class="bar-bg-layer"></div>
+
+    <div class="header-logo" title="Left-click to switch logo icon | Right-click for options">
+      <img id="logoIconImg" src="cat_headphone.jpg" class="logo-img-avatar" alt="VYNL Logo Cat" />
+      <span class="logo-name">VYNL</span>
+    </div>
+
+    <div class="header-actions">
+      <!-- Recommendations Toggle Button -->
+      <button id="recsDropdownBtn" class="header-hub-btn recs-nav-btn" title="Click to view recommended songs">
+        <img src="padoru_dancing.png" class="padoru-icon" alt="Padoru Dancing" />
+        <span class="hub-btn-text">Recs (<span id="recsCount">0</span>)</span>
+      </button>
+
+      <!-- Theme & Visuals Studio (Clean, High Visibility) -->
+      <button id="themePickerBtn" class="header-hub-btn theme-nav-btn" title="Customize Themes & Visuals">
+        <span class="retro-btn-emoji">🎨</span>
+        <span class="hub-btn-text">Themes</span>
+      </button>
+
+      <!-- VYNL+ Tier Status / Upgrade Button -->
+      <button id="vynlPlusHeaderBtn" class="vynl-plus-header-btn" title="VYNL+ Membership & Perks Hub">
+        <span class="vynl-plus-crown">👑</span>
+        <span id="vynlPlusHeaderLabel" class="vynl-plus-label">VYNL+</span>
+        <span id="vynlPlusPricePill" class="plus-price-pill">₹99/mo</span>
+      </button>
+
+      <!-- User Account & Profile Button -->
+      <button id="userProfileBtn" class="header-hub-btn header-profile-btn" title="View Profile & Stats">
+        <img id="headerUserAvatar" src="logo_cat.jpg" class="header-avatar-img" alt="User Avatar" />
+        <span id="headerUserName" class="hub-btn-text">ankit</span>
+        <span class="user-tier-dot" title="Account Active"></span>
+      </button>
+
+      <!-- Toggle Dashboard / Immersive Video Mode -->
+      <button id="toggleDashboardBtn" class="header-hub-btn" title="Toggle Dashboard / Video Mode">
+        <img src="pixel_house_icon.png" class="retro-btn-img-icon" alt="Cozy House" />
+        <span class="hub-btn-text">Dashboard</span>
+      </button>
+
+      <!-- Fullscreen Video Mode -->
+      <button id="fullscreenBtn" class="header-hub-btn" title="Toggle Fullscreen Video">
+        <img src="pixel_monitor_icon.png" class="retro-btn-img-icon" alt="Retro Monitor" />
+        <span class="hub-btn-text">Fullscreen</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── RECOMMENDATIONS MODAL OVERLAY (Positioned over video canvas with high z-index) ── -->
+  <div id="recsDropdownMenu" class="recs-dropdown-menu hidden">
+    <div class="recs-header">
+      <div>
+        <span class="recs-menu-title">Recommended Songs</span>
+        <span class="recs-subtitle-tag">YouTube Verified</span>
+      </div>
+      <button id="closeRecsBtn" class="close-recs-btn" title="Close Recommendations">✕</button>
+    </div>
+    <div id="recsList" class="recs-list">
+      <div class="recs-empty-hint">
+        ⚡ Click any vibe chip or search a song to generate recommendations!
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAIN ──────────────────────────────────────── -->
+  <main class="main" id="main">
+
+    <!-- Navigation Mode Tabs -->
+    <div class="nav-tabs">
+      <button id="tabMood" class="nav-tab active">✨ Mood Vibe</button>
+      <button id="tabMoodAi" class="nav-tab">🧠 Advanced Mood AI <span class="tab-crown-tag">👑 VYNL+</span></button>
+      <button id="tabSearch" class="nav-tab">🔍 Search Any Song</button>
+      <button id="tabBoards" class="nav-tab">📋 My Boards (<span id="boardsCountBadge">0</span>)</button>
+      <button id="tabSaved" class="nav-tab">❤️ Saved Library (<span id="savedCountBadge">0</span>)</button>
+    </div>
+
+    <!-- Mood Input View (Hero Conversational Mood Experience) -->
+    <section id="inputSection" class="section">
+      <h1 class="heading">How are you feeling?</h1>
+      <p class="subheading">Tell VYNL your exact mood or setting — we'll generate your personalized board.</p>
+
+      <div class="hero-prompt-container">
+        <textarea
+          id="moodInput"
+          class="mood-input hero-mood-input"
+          placeholder="E.g. &quot;I feel nostalgic, it's raining and I want something that feels like 2 AM...&quot;"
+          rows="3"
+        ></textarea>
+
+        <!-- Quick Story Mood Prompts -->
+        <div class="story-prompts-row">
+          <span class="prompts-hint">Try describing:</span>
+          <button class="story-prompt-chip" data-prompt="I feel nostalgic, it's raining outside and I want something that feels like 2 AM">🌧️ 2AM in the Rain</button>
+          <button class="story-prompt-chip" data-prompt="Driving alone on an empty highway late at night with glowing city neon lights">🚗 Midnight Drive</button>
+          <button class="story-prompt-chip" data-prompt="Sitting in a quiet Tokyo coffee shop while watching rain on the window">☕ Rainy Tokyo Cafe</button>
+          <button class="story-prompt-chip" data-prompt="Songs for when you miss someone you shouldn't, bittersweet and emotional">💔 Bittersweet Nostalgia</button>
+          <button class="story-prompt-chip" data-prompt="Late night coding in a dark room with synthwave and cyberpunk beats">⚡ 3AM Cyber Coder</button>
+          <button class="story-prompt-chip" data-prompt="High energy gym beast mode phonk and electronic bass">💪 Overdrive Gym PR</button>
+        </div>
+      </div>
+
+      <!-- Preset Vibe Palette -->
+      <div class="chips-label">Or select a sonic vibe:</div>
+      <div class="mood-chips">
+        <button class="mood-chip" data-mood="chill">💥 Cosmic Supernova</button>
+        <button class="mood-chip" data-mood="mew">💖 Pixel Mew Cosmic</button>
+        <button class="mood-chip" data-mood="psychedelic">🌊 Synth Wave Sphere</button>
+        <button class="mood-chip" data-mood="lofi">🐱 Night Cat Vibe</button>
+        <button class="mood-chip" data-mood="happy">🐟 Goldfish Art</button>
+        <button class="mood-chip" data-mood="energetic">☀️ Solar Flare</button>
+        <button class="mood-chip" data-mood="party">📺 Anime CRT Gaming</button>
+        <button class="mood-chip" data-mood="focus">⭐ Pixel Star Grid</button>
+        <button class="mood-chip" data-mood="sad">🌧️ Melancholy</button>
+        <button class="mood-chip" data-mood="workout">💪 Workout Boost</button>
+        <button class="mood-chip" data-mood="romantic">❤️ Romantic</button>
+        <button class="mood-chip" data-mood="sleep">🌙 Sleep & Lofi</button>
+      </div>
+
+      <button id="generateBtn" class="primary-btn hero-generate-btn">
+        <span id="generateBtnText">✨ Generate Custom Mood Board</span>
+        <div id="generateSpinner" class="spinner hidden"></div>
+      </button>
+    </section>
+
+    <!-- ── ADVANCED MOOD AI VIEW (VYNL+ PRO) ──────────── -->
+    <section id="moodAiSection" class="section hidden">
+      <div class="section-badge-header">
+        <span class="vynl-plus-crown-tag">👑 VYNL+ EXCLUSIVE FEATURE</span>
+        <h1 class="heading">Advanced Mood AI Studio</h1>
+        <p class="subheading">Multi-vector neural sound synthesis matching your exact psychological state & vibe.</p>
+      </div>
+
+      <div class="mood-ai-card">
+        <!-- Multi-Vector Sliders -->
+        <div class="ai-sliders-grid">
+          <div class="ai-slider-item">
+            <div class="slider-label-row">
+              <span class="slider-title">🌧️ Emotional Valence</span>
+              <span id="valenceVal" class="slider-val">50% (Balanced)</span>
+            </div>
+            <input type="range" id="valenceSlider" min="0" max="100" value="50" class="sp-volume-slider ai-range" />
+            <div class="slider-ticks">
+              <span>Deep Melancholy</span>
+              <span>Bittersweet</span>
+              <span>Pure Euphoria</span>
+            </div>
+          </div>
+
+          <div class="ai-slider-item">
+            <div class="slider-label-row">
+              <span class="slider-title">⚡ Energy & Adrenaline</span>
+              <span id="energyVal" class="slider-val">65% (Dynamic)</span>
+            </div>
+            <input type="range" id="energySlider" min="0" max="100" value="65" class="sp-volume-slider ai-range" />
+            <div class="slider-ticks">
+              <span>Serene / Ambient</span>
+              <span>Groovy</span>
+              <span>Overdrive Peak</span>
+            </div>
+          </div>
+
+          <div class="ai-slider-item">
+            <div class="slider-label-row">
+              <span class="slider-title">🎹 Acoustic vs Cyber-Synth</span>
+              <span id="acousticVal" class="slider-val">70% (Synthetic)</span>
+            </div>
+            <input type="range" id="acousticSlider" min="0" max="100" value="70" class="sp-volume-slider ai-range" />
+            <div class="slider-ticks">
+              <span>Pure Acoustic/Piano</span>
+              <span>Hybrid Indie</span>
+              <span>Cyber Retrowave</span>
+            </div>
+          </div>
+
+          <div class="ai-slider-item">
+            <div class="slider-label-row">
+              <span class="slider-title">⏳ Era & Texture Matrix</span>
+              <span id="eraVal" class="slider-val">80s Synth</span>
+            </div>
+            <select id="eraSelect" class="ai-select">
+              <option value="80s">📼 80s Retrowave & Neon Synth</option>
+              <option value="90s">🛹 90s Grunge & Golden Era R&B</option>
+              <option value="2000s">💿 2000s Y2K Pop & Neo-Soul</option>
+              <option value="lofi" selected>☕ Modern Lo-Fi & Bedroom Indie</option>
+              <option value="cyberpunk">🌆 Cyberpunk 2077 Night City High Bass</option>
+              <option value="citypop">🌸 80s Japanese City Pop & Funk</option>
+              <option value="cinematic">🌌 Hans Zimmer Space Orchestral</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Custom Prompt & Deep Preset Pills -->
+        <div class="ai-prompt-wrap">
+          <label class="chips-label">Deep Neural Prompt:</label>
+          <textarea
+            id="aiPromptInput"
+            class="mood-input ai-textarea"
+            placeholder="E.g., Stargazing alone from a rooftop in Tokyo at 3 AM while drinking warm tea in light rain..."
+            rows="2"
+          ></textarea>
+
+          <div class="ai-presets-row">
+            <span class="presets-tag">AI Presets:</span>
+            <button class="ai-preset-chip" data-prompt="3 AM existential coding flow with dark ambient synth and warm sub bass">🌙 3 AM Coder</button>
+            <button class="ai-preset-chip" data-prompt="Driving fast under purple neon highway lights in heavy rain cyberpunk city">🚗 Cyberpunk Rain</button>
+            <button class="ai-preset-chip" data-prompt="Heartbroken nostalgic indie folk acoustic guitar on a foggy autumn morning">🍂 Autumn Nostalgia</button>
+            <button class="ai-preset-chip" data-prompt="High adrenaline beast mode gym PR heavy phonk and bass booster">💪 High Beast PR</button>
+            <button class="ai-preset-chip" data-prompt="Cozy Studio Ghibli afternoon coffee shop piano and soft jazz vinyl crackle">☕ Ghibli Coffee</button>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="ai-actions-row">
+          <button id="aiSynthesizeBtn" class="primary-btn ai-btn">
+            <span id="aiBtnText">🧠 Synthesize AI Mood Board</span>
+            <div id="aiSpinner" class="spinner hidden"></div>
+          </button>
+          <button id="aiSurpriseBtn" class="outline-btn ai-surprise-btn" title="Generate random advanced formula">
+            🎲 Surprise AI Mix
+          </button>
+        </div>
+
+        <!-- Real-time AI Sound Analysis telemetry -->
+        <div id="aiTelemetryBox" class="ai-telemetry-box">
+          <div class="telemetry-item">
+            <span class="telemetry-label">Target BPM:</span>
+            <span id="telBpm" class="telemetry-val">118–126 BPM</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Key Resonance:</span>
+            <span id="telKey" class="telemetry-val">F# Minor / A Major</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">Genre Fusion:</span>
+            <span id="telGenre" class="telemetry-val">Cyberwave × Chillhop</span>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label">AI Formula:</span>
+            <span id="telFormula" class="telemetry-val">Valence 0.50 | Energy 0.65 | Synth 0.70</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Direct Song Search View -->
+    <section id="searchSection" class="section hidden">
+      <h1 class="heading">Search Any Song</h1>
+      <p class="subheading">Type a song title or artist to play verified releases directly.</p>
+
+      <div class="search-bar-wrap">
+        <input
+          type="text"
+          id="songSearchInput"
+          class="search-input"
+          placeholder="Search songs or artists (e.g. 'Blinding Lights', 'The Weeknd', 'Taylor Swift')..."
+          autocomplete="off"
+        />
+        <button id="songSearchBtn" class="search-btn">
+          <span id="songSearchBtnText">Search</span>
+          <div id="songSearchSpinner" class="spinner hidden"></div>
+        </button>
+
+        <!-- Live Search Recommendations Dropdown -->
+        <div id="searchSuggestionsDropdown" class="search-suggestions-dropdown hidden"></div>
+      </div>
+    </section>
+
+    <!-- ── UNLIMITED PERSONALIZED BOARDS VIEW ─────────── -->
+    <section id="boardsSection" class="section hidden">
+      <div class="results-header">
+        <div class="mood-info">
+          <span class="results-emoji">📋</span>
+          <div>
+            <h2 class="results-title">Personalized Music Boards</h2>
+            <p id="boardsSubtitle" class="results-subtitle">Craft your custom vibe stations & playlists.</p>
+          </div>
+        </div>
+        <div class="boards-top-actions">
+          <span id="boardsTierCounter" class="tier-counter-pill">1 / 1 Board (Free Tier)</span>
+          <button id="createBoardBtn" class="primary-btn small-btn">+ Create New Board</button>
+        </div>
+      </div>
+
+      <!-- Boards Gallery Grid -->
+      <div id="boardsGrid" class="boards-grid"></div>
+
+      <!-- Selected Board Detail Track List View -->
+      <div id="boardDetailsView" class="board-details-view hidden">
+        <div class="board-detail-header">
+          <button id="backToBoardsBtn" class="outline-btn">← All Boards</button>
+          <div class="board-detail-meta">
+            <span id="detailBoardEmoji" class="board-detail-emoji">🎧</span>
+            <div>
+              <h2 id="detailBoardTitle" class="board-detail-title">Late Night Coding</h2>
+              <p id="detailBoardSubtitle" class="board-detail-subtitle">0 tracks • Created on VYNL</p>
+            </div>
+          </div>
+          <div class="board-detail-controls">
+            <button id="playBoardAllBtn" class="primary-btn small-btn">▶ Play All</button>
+            <button id="shareBoardDetailsBtn" class="primary-btn small-btn share-glow-btn" title="Share board link">🚀 Share Board</button>
+            <button id="editBoardBtn" class="outline-btn small-btn">✏️ Edit</button>
+            <button id="deleteBoardBtn" class="outline-btn small-btn danger-btn">🗑️ Delete</button>
+          </div>
+        </div>
+        <div id="boardTrackList" class="track-list"></div>
+      </div>
+    </section>
+
+    <!-- Results (Clean Minimal Status Banner) -->
+    <section id="resultsSection" class="section hidden">
+      <div class="results-header">
+        <div class="mood-info">
+          <span id="resultsEmoji" class="results-emoji"></span>
+          <div>
+            <h2 id="resultsTitle" class="results-title"></h2>
+            <p id="resultsSubtitle" class="results-subtitle"></p>
+          </div>
+        </div>
+        <button id="newMoodBtn" class="outline-btn">← New Mood</button>
+      </div>
+
+      <!-- About the Artist Bio Card (Scroll View) -->
+      <div id="artistBioSection" class="artist-card hidden">
+        <div class="artist-card-header">
+          <img id="artistAvatar" class="artist-avatar" src="" alt="Artist" />
+          <div class="artist-card-info">
+            <div class="artist-badge-wrap">
+              <span class="verified-artist-tag">✓ Verified Artist</span>
+            </div>
+            <h3 id="artistName" class="artist-card-name">—</h3>
+            <p id="artistGenre" class="artist-card-genre">YouTube Music Featured Artist</p>
+          </div>
+        </div>
+        <p id="artistBioText" class="artist-bio-text">Loading artist bio...</p>
+        <div class="artist-links">
+          <a id="geniusLink" href="#" target="_blank" rel="noopener" class="genius-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+            Explore Lyrics on Genius.com ↗
+          </a>
+        </div>
+      </div>
+
+      <!-- Results Track Items Container -->
+      <div id="resultsTrackList" class="track-list"></div>
+    </section>
+
+    <!-- Saved Songs Library View (Same Layout & Demographic) -->
+    <section id="savedSection" class="section hidden">
+      <div class="results-header">
+        <div class="mood-info">
+          <span class="results-emoji">❤️</span>
+          <div>
+            <h2 class="results-title">Saved Songs Library</h2>
+            <p id="savedSubtitle" class="results-subtitle">0 saved tracks in your offline library.</p>
+          </div>
+        </div>
+        <div class="saved-actions-row">
+          <button id="clearSavedBtn" class="outline-btn small-btn danger-btn" title="Clear all saved tracks">Clear Library</button>
+        </div>
+      </div>
+
+      <!-- Saved Tracks List Container (Same Layout & Demographic) -->
+      <div id="savedTrackList" class="track-list">
+        <div class="empty-saved-hint">
+          <p style="font-size: 1.15rem; color: #f5dfa0; font-weight: 700; margin-bottom: 8px;">❤️ Your Saved Library is empty</p>
+          <p style="font-size: 0.9rem; color: #a8916a;">Click the heart icon (❤️) on any song card or player bar to save your favorite tracks for instant access anytime!</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── SPOTIFY KARAOKE SING-ALONG MODAL ──────────────── -->
+  <div id="spotifyKaraokeModal" class="spotify-karaoke-modal hidden">
+    <div class="karaoke-header">
+      <div>
+        <h2 id="karaokeSongTitle" class="karaoke-title">—</h2>
+        <p id="karaokeArtist" class="karaoke-artist">—</p>
+      </div>
+      <button id="exitKaraokeBtn" class="exit-karaoke-btn">✕ Exit Karaoke</button>
+    </div>
+
+    <!-- Advanced Karaoke Studio Pro Toolbar (VYNL+) -->
+    <div class="karaoke-pro-toolbar">
+      <div class="k-tool-item">
+        <button id="kToolVocalCut" class="k-pro-btn" title="Reduce center vocal frequencies (Simulated Instrumental)">
+          <span class="k-icon">🎚️</span>
+          <span>Vocal Reducer</span>
+          <span class="k-pro-tag">👑 PRO</span>
+        </button>
+      </div>
+
+      <div class="k-tool-item pitch-control-group">
+        <span class="k-tool-label">Pitch Key:</span>
+        <button id="kPitchDown" class="k-pitch-btn" title="Pitch Down (-1 semitone)">-</button>
+        <span id="kPitchValue" class="k-pitch-val">0 (Orig)</span>
+        <button id="kPitchUp" class="k-pitch-btn" title="Pitch Up (+1 semitone)">+</button>
+        <span class="k-pro-tag">👑 PRO</span>
+      </div>
+
+      <div class="k-tool-item">
+        <button id="kToolBassBoost" class="k-pro-btn" title="Toggle Deep Sub-Bass +6dB Booster">
+          <span class="k-icon">🔊</span>
+          <span id="kBassLabel">Bass Boost</span>
+          <span class="k-pro-tag">👑 PRO</span>
+        </button>
+      </div>
+
+      <div class="k-tool-item">
+        <button id="kToolSpatialAudio" class="k-pro-btn" title="Toggle 3D Spatial Surround Audio">
+          <span class="k-icon">🎧</span>
+          <span id="kSpatialLabel">3D Spatial</span>
+          <span class="k-pro-tag">👑 PRO</span>
+        </button>
+      </div>
+
+      <div class="k-tool-item">
+        <button id="kToolMic" class="k-pro-btn" title="Enable Live Microphone Sing-Along with Reverb">
+          <span class="k-icon">🎙️</span>
+          <span id="kMicLabel">Mic: OFF</span>
+          <span class="k-pro-tag">👑 PRO</span>
+        </button>
+      </div>
+
+      <div class="k-tool-item">
+        <button id="kToolTeleprompter" class="k-pro-btn" title="Toggle Big Text Teleprompter View">
+          <span class="k-icon">📜</span>
+          <span>Teleprompter</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="karaoke-body" id="karaokeBody">
+      <div id="karaokeLyricsContainer" class="karaoke-lyrics-container">
+        <p class="karaoke-line active">Play a song to start singing along...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SPOTIFY DESKTOP PLAYER BAR ─────────────────── -->
+  <div id="playerBar" class="player-bar">
+    <div id="trayBgLayer1" class="bar-bg-layer active"></div>
+    <div id="trayBgLayer2" class="bar-bg-layer"></div>
+
+    <!-- Left: Album cover, Track name, Verified badge, Subtitle -->
+    <div class="sp-player-left">
+      <img id="playerAlbumThumb" class="sp-album-thumb" src="vinyl.jpg" alt="Album Cover" />
+      <div class="sp-track-meta">
+        <div class="sp-title-row">
+          <span id="playerTitle" class="sp-track-title">Deep Focus Ambient Lofi Study Beats</span>
+          <span class="sp-verified-badge" title="Verified Artist on YouTube Music">✓</span>
+        </div>
+        <div class="sp-subtitle-row">
+          <span id="playerChannel" class="sp-artist-name">Lofi Records</span>
+        </div>
+      </div>
+      <button id="playerHeartBtn" class="sp-heart-btn" title="Save song to your library">
+        <span class="heart-icon">🤍</span>
+      </button>
+    </div>
+
+    <!-- Center: Playback Control Buttons (Rewind, Play, Next) & Progress Timeline -->
+    <div class="sp-player-center">
+      <div class="sp-controls-row">
+        <!-- Loop track toggle button -->
+        <button id="loopBtn" class="sp-icon-btn" title="Toggle Loop Mode (On / Off)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+        </button>
+
+        <!-- Previous/Rewind track button -->
+        <button id="prevBtn" class="sp-icon-btn" title="Previous / Rewind">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+        </button>
+
+        <!-- Play / Pause Circle Button -->
+        <button id="playBtn" class="sp-play-circle" title="Play / Pause">
+          <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="hidden"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+
+        <!-- Next track button -->
+        <button id="nextBtn" class="sp-icon-btn" title="Next Track">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6h2v12h-2z"/></svg>
+        </button>
+
+        <!-- Shuffle toggle button -->
+        <button id="shuffleBtn" class="sp-icon-btn" title="Toggle Shuffle Mode (On / Off)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.45 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        </button>
+      </div>
+
+      <!-- Timeline Progress Bar -->
+      <div class="sp-timeline-row">
+        <span id="currentTime" class="sp-time-text">0:00</span>
+        <div id="progressTrack" class="sp-progress-track">
+          <div id="progressFill" class="sp-progress-fill"></div>
+        </div>
+        <span id="totalTime" class="sp-time-text">3:40</span>
+      </div>
+    </div>
+
+    <!-- Media View Switcher (Spacious Positioned Between Timeline & Volume Bar) -->
+    <div class="sp-media-switch-group">
+      <button id="viewArtworkBtn" class="sp-media-btn" title="Switch to HD Album Artwork Cover Mode">
+        <span class="media-btn-icon">🎨</span>
+        <span class="media-btn-label">Artwork</span>
+      </button>
+      <button id="viewVideoBtn" class="sp-media-btn active" title="Switch to Official Music Video Mode">
+        <span class="media-btn-icon">📹</span>
+        <span class="media-btn-label">Video</span>
+      </button>
+    </div>
+
+    <!-- Right: Volume Controls & Karaoke Mode Button -->
+    <div class="sp-player-right">
+      <div class="sp-volume-group">
+        <button id="volumeMuteBtn" class="sp-icon-btn" title="Mute / Unmute">
+          <span id="volumeIcon">🔊</span>
+        </button>
+        <input
+          type="range"
+          id="volumeSlider"
+          class="sp-volume-slider"
+          min="0"
+          max="100"
+          value="80"
+        />
+        <!-- Vinyl & Mic Karaoke Mode Button -->
+        <button id="openKaraokeBtn" class="karaoke-trigger-btn" title="Open Karaoke Sing-Along Mode">
+          <img id="karaokeCdImg" src="vinyl.jpg" class="karaoke-vinyl-img" alt="Spinning CD Record" />
+          <span class="karaoke-mic-icon">🎤</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── USER ACCOUNT & PROFILE MODAL ────────────────── -->
+  <div id="userProfileModal" class="modal-overlay hidden">
+    <div class="modal-backdrop" id="userProfileBackdrop"></div>
+    <div class="modal-card profile-modal-card">
+      <div class="modal-header profile-modal-header">
+        <div class="profile-header-user">
+          <div class="profile-avatar-wrap">
+            <img id="profileModalAvatar" src="logo_cat.jpg" class="profile-large-avatar" alt="Avatar" />
+            <button id="changeAvatarBtn" class="change-avatar-badge" title="Change Avatar">📷</button>
+          </div>
+          <div>
+            <div class="profile-name-row">
+              <h2 id="profileModalName" class="profile-display-name">ankit's VYNL</h2>
+              <span id="profileTierBadge" class="profile-tier-badge">FREE TIER</span>
+            </div>
+            <p id="profileModalBio" class="profile-bio-text">Curating late-night lofi & dreamy soundscapes</p>
+          </div>
+        </div>
+        <button id="closeProfileModalBtn" class="close-info-btn">✕</button>
+      </div>
+
+      <div class="profile-modal-body">
+        <!-- Profile Stats Row (Roadmap Phase 4) -->
+        <div class="profile-stats-grid">
+          <div class="profile-stat-card">
+            <span class="stat-icon">🎧</span>
+            <span id="statBoardsCount" class="stat-number">1</span>
+            <span class="stat-label">Boards</span>
+          </div>
+          <div class="profile-stat-card">
+            <span class="stat-icon">❤️</span>
+            <span id="statSavedCount" class="stat-number">0</span>
+            <span class="stat-label">Saved Songs</span>
+          </div>
+          <div class="profile-stat-card">
+            <span class="stat-icon">🌙</span>
+            <span id="statMoodsCount" class="stat-number">4</span>
+            <span class="stat-label">Moods Created</span>
+          </div>
+        </div>
+
+        <!-- Avatar Selection Tray (Hidden by default) -->
+        <div id="avatarPickerTray" class="avatar-picker-tray hidden">
+          <span class="picker-label">Choose Retro Avatar:</span>
+          <div class="avatar-options-row">
+            <img src="logo_cat.jpg" class="avatar-option active" data-avatar="logo_cat.jpg" alt="Classic Cat" />
+            <img src="cat_headphone.jpg" class="avatar-option" data-avatar="cat_headphone.jpg" alt="Lofi Cat" />
+            <img src="cat_white_headphones.jpg" class="avatar-option" data-avatar="cat_white_headphones.jpg" alt="Cosmic Kitty" />
+          </div>
+        </div>
+
+        <!-- Edit Profile Section -->
+        <div class="profile-edit-section">
+          <div class="profile-input-group">
+            <label class="form-label">Username:</label>
+            <input type="text" id="editUsernameInput" class="search-input" value="ankit" />
+          </div>
+          <div class="profile-input-group">
+            <label class="form-label">Bio Status:</label>
+            <input type="text" id="editBioInput" class="search-input" value="Curating late-night lofi & dreamy soundscapes" />
+          </div>
+          <button id="saveProfileBtn" class="outline-btn small-btn">Save Profile</button>
+        </div>
+
+        <!-- Account Management & Switch Section -->
+        <div class="profile-account-actions">
+          <button id="openAuthModalBtn" class="outline-btn small-btn">🔄 Switch Account / Log In</button>
+          <button id="signOutBtn" class="outline-btn small-btn danger-btn">🚪 Sign Out</button>
+        </div>
+
+        <!-- Mood Generation History Log (Roadmap Phase 2/4) -->
+        <div class="profile-section-block">
+          <h3 class="profile-block-title">🕒 Recent Mood History</h3>
+          <div id="moodHistoryList" class="mood-history-list">
+            <!-- Dynamically injected mood history -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── AUTHENTICATION & LOGIN / SIGN UP MODAL ───────── -->
+  <div id="authModal" class="modal-overlay hidden">
+    <div class="modal-backdrop" id="authBackdrop"></div>
+    <div class="modal-card auth-modal-card">
+      <div class="modal-header auth-modal-header">
+        <div class="auth-header-brand">
+          <img src="logo_cat.jpg" class="auth-brand-logo" alt="VYNL Cat" />
+          <div>
+            <h2 class="auth-title">Welcome to VYNL</h2>
+            <p class="auth-subtitle">Save your boards, favorite moods & sonic sanctuary in the cloud</p>
+          </div>
+        </div>
+        <button id="closeAuthModalBtn" class="close-info-btn">✕</button>
+      </div>
+
+      <div class="auth-tabs-row">
+        <button id="tabSignInBtn" class="auth-tab-btn active">🔑 Sign In</button>
+        <button id="tabSignUpBtn" class="auth-tab-btn">✨ Create Account</button>
+      </div>
+
+      <div class="auth-modal-body">
+        <!-- Sign In Form -->
+        <form id="signInForm" class="auth-form">
+          <div class="auth-input-group">
+            <label class="form-label">Username or Email</label>
+            <input type="text" id="signInUsername" class="auth-text-input" placeholder="e.g. ankit or you@gmail.com" required value="ankit" />
+          </div>
+
+          <div class="auth-input-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="signInPassword" class="auth-text-input" placeholder="••••••••" required value="vynl2026" />
+          </div>
+
+          <div class="auth-options-row">
+            <label class="auth-checkbox-label">
+              <input type="checkbox" id="rememberMeCheckbox" checked />
+              <span>Remember me</span>
+            </label>
+            <button type="button" id="demoQuickLoginBtn" class="demo-login-link">⚡ 1-Click Demo (ankit)</button>
+          </div>
+
+          <button type="submit" id="submitSignInBtn" class="auth-submit-btn">
+            <span>🔑 Sign In to VYNL</span>
+          </button>
+        </form>
+
+        <!-- Sign Up Form (Hidden by default) -->
+        <form id="signUpForm" class="auth-form hidden">
+          <div class="auth-input-group">
+            <label class="form-label">Choose Username</label>
+            <input type="text" id="signUpUsername" class="auth-text-input" placeholder="e.g. lofi_explorer" required />
+          </div>
+
+          <div class="auth-input-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="signUpEmail" class="auth-text-input" placeholder="you@example.com" required />
+          </div>
+
+          <div class="auth-input-group">
+            <label class="form-label">Create Password</label>
+            <input type="password" id="signUpPassword" class="auth-text-input" placeholder="Min. 6 characters" required />
+          </div>
+
+          <div class="auth-input-group">
+            <label class="form-label">Select Starting Avatar</label>
+            <div class="avatar-signup-tray">
+              <img src="logo_cat.jpg" class="signup-avatar-opt active" data-avatar="logo_cat.jpg" alt="Classic Cat" />
+              <img src="cat_headphone.jpg" class="signup-avatar-opt" data-avatar="cat_headphone.jpg" alt="Lofi Cat" />
+              <img src="cat_white_headphones.jpg" class="signup-avatar-opt" data-avatar="cat_white_headphones.jpg" alt="Cosmic Kitty" />
+            </div>
+          </div>
+
+          <button type="submit" id="submitSignUpBtn" class="auth-submit-btn">
+            <span>✨ Create Free Account</span>
+          </button>
+        </form>
+
+        <div class="auth-divider">
+          <span>OR</span>
+        </div>
+
+        <div class="social-auth-grid">
+          <button type="button" id="googleAuthBtn" class="social-auth-btn google-btn">
+            <span class="social-icon">🌐</span>
+            <span>Continue with Google</span>
+          </button>
+          <button type="button" id="guestAuthBtn" class="social-auth-btn guest-btn">
+            <span class="social-icon">🐱</span>
+            <span>Continue as Guest</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VIRAL SHAREABLE BOARD MODAL ──────────────────── -->
+  <div id="shareBoardModal" class="modal-overlay hidden">
+    <div class="modal-backdrop" id="shareBoardBackdrop"></div>
+    <div class="modal-card share-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-badge">🔗 VIRAL BOARD SHARING</span>
+          <h2 class="modal-title">Share VYNL Music Board</h2>
+        </div>
+        <button id="closeShareModalBtn" class="close-info-btn">✕</button>
+      </div>
+
+      <div class="share-modal-body">
+        <!-- Board Preview Card -->
+        <div class="share-board-preview">
+          <span id="sharePreviewEmoji" class="share-preview-emoji">🌙</span>
+          <div class="share-preview-meta">
+            <h3 id="sharePreviewTitle" class="share-preview-title">Midnight Drive</h3>
+            <p id="sharePreviewSubtitle" class="share-preview-sub">15 songs • Dreamy • Late Night • Nostalgic</p>
+          </div>
+        </div>
+
+        <!-- Share URL & One-Click Copy -->
+        <div class="share-url-box">
+          <input type="text" id="shareUrlInput" class="search-input share-input" readonly />
+          <button id="copyShareUrlBtn" class="primary-btn small-btn">📋 Copy Link</button>
+        </div>
+
+        <!-- Social Distribution Channels (Roadmap Phase 4) -->
+        <div class="social-share-channels">
+          <button id="shareWhatsappBtn" class="social-btn whatsapp-btn" title="Share on WhatsApp">
+            <span class="social-icon">💬</span>
+            <span>WhatsApp</span>
+          </button>
+          <button id="shareDiscordBtn" class="social-btn discord-btn" title="Share on Discord">
+            <span class="social-icon">🎮</span>
+            <span>Discord</span>
+          </button>
+          <button id="shareTwitterBtn" class="social-btn twitter-btn" title="Share on Twitter / X">
+            <span class="social-icon">𝕏</span>
+            <span>Twitter / X</span>
+          </button>
+          <button id="shareInstagramBtn" class="social-btn instagram-btn" title="Copy Instagram Story Text">
+            <span class="social-icon">📸</span>
+            <span>Instagram</span>
+          </button>
+        </div>
+        <p class="share-viral-hint">Anyone with this link can listen to this board and save it to their own VYNL!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SONG & ARTIST INFO OVERLAY MODAL ─────────────── -->
+  <div id="songInfoModal" class="song-info-modal hidden">
+    <div id="songInfoBackdrop" class="song-info-backdrop"></div>
+    <div class="song-info-card">
+      <button id="closeSongInfoBtn" class="close-info-btn" title="Close info">✕</button>
+
+      <div class="info-card-header">
+        <img id="modalAlbumArt" class="info-album-art" src="vinyl.jpg" alt="Song Cover Art" />
+        <div class="info-meta-wrap">
+          <span class="info-badge">🎵 SONG & ARTIST SPOTLIGHT</span>
+          <h2 id="modalSongTitle" class="info-song-title">—</h2>
+          <p id="modalArtistName" class="info-artist-name">— <span class="verified-tag">✓ Verified Creator</span></p>
+          <div class="info-tags-row">
+            <span id="modalGenreTag" class="info-tag">Official Release</span>
+            <span id="modalYearTag" class="info-tag">HD Audio</span>
+            <span id="modalDurationTag" class="info-tag">Duration: 3:30</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card-body">
+        <div class="info-section-block">
+          <h3 class="info-section-title">✨ About the Artist</h3>
+          <p id="modalArtistBio" class="info-section-text">Loading artist bio...</p>
+        </div>
+
+        <div class="info-section-block">
+          <h3 class="info-section-title">💿 Album & Song Details</h3>
+          <p id="modalSongStory" class="info-section-text">Loading track annotations...</p>
+        </div>
+
+        <div class="info-card-footer">
+          <a id="modalGeniusLink" href="#" target="_blank" rel="noopener" class="outline-btn">
+            Explore Lyrics on Genius ↗
+          </a>
+          <a id="modalYtLink" href="#" target="_blank" rel="noopener" class="outline-btn">
+            Watch on YouTube ↗
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── THEME & VISUALS STUDIO MODAL ────────────────── -->
+  <div id="themeModal" class="modal-overlay hidden">
+    <div class="modal-backdrop" id="themeBackdrop"></div>
+    <div class="modal-card theme-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-badge">🎨 VISUAL IMMERSION</span>
+          <h2 class="modal-title">Theme & Visuals Studio</h2>
+        </div>
+        <button id="closeThemeModalBtn" class="close-info-btn">✕</button>
+      </div>
+
+      <div class="theme-modal-body">
+        <!-- Section: Basic Standard Themes (Free Tier) -->
+        <div class="theme-section">
+          <div class="theme-section-header">
+            <h3>Basic Themes <span class="free-badge">FREE TIER</span></h3>
+            <p>Aesthetic baseline visual backgrounds included with every VYNL account.</p>
+          </div>
+          <div class="theme-grid">
+            <div class="theme-card active" data-theme="cosmic">
+              <img src="cosmic_supernova_bg.jpg" alt="Cosmic Supernova" class="theme-thumb" />
+              <div class="theme-card-info">
+                <span class="theme-name">🌌 Cosmic Supernova</span>
+                <span class="theme-status">Free</span>
+              </div>
+            </div>
+            <div class="theme-card" data-theme="goldfish">
+              <img src="bg_goldfish_art.jpg" alt="Goldfish Art" class="theme-thumb" />
+              <div class="theme-card-info">
+                <span class="theme-name">🐟 Goldfish Painting</span>
+                <span class="theme-status">Free</span>
+              </div>
+            </div>
+            <div class="theme-card" data-theme="nightcat">
+              <img src="bg_night_cat.jpg" alt="Night Cat" class="theme-thumb" />
+              <div class="theme-card-info">
+                <span class="theme-name">🌙 Lofi Night Cat</span>
+                <span class="theme-status">Free</span>
+              </div>
+            </div>
+            <div class="theme-card" data-theme="stargrid">
+              <img src="bg_pixel_star_grid.jpg" alt="Star Grid" class="theme-thumb" />
+              <div class="theme-card-info">
+                <span class="theme-name">⭐ Pixel Star Grid</span>
+                <span class="theme-status">Free</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Exclusive Themes (VYNL+ PRO) -->
+        <div class="theme-section">
+          <div class="theme-section-header">
+            <h3>Exclusive Visuals & Themes <span class="vynl-plus-crown-tag">👑 VYNL+ EXCLUSIVE</span></h3>
+            <p>Ultra HD animated aesthetic soundscapes and cyberpunk visuals.</p>
+          </div>
+          <div class="theme-grid">
+            <div class="theme-card pro-theme-card" data-theme="cyberpunk" data-pro="true">
+              <div class="pro-lock-badge">👑 PRO</div>
+              <img src="bg_anime_crt.jpg" alt="Neon Cyberpunk Tokyo" class="theme-thumb" />
+              <div class="theme-card-info">
+                <span class="theme-name">📺 Neon CRT Tokyo</span>
+                <span class="theme-status">VYNL+</span>
+              </div>
+            </div>
+            <div class="theme-card pro-theme-card" data-theme="synthwave" data-pro="true">
+              <div class="pro-lock-badge">👑 PRO</div>
+              <img src="bg_tame_impala_waves.jpg" alt="Synthwave Retrowave" class="theme-thumb" />
+              <div class="theme-card-info">
+                <span class="theme-name">🌊 Synth Wave 80s</span>
+                <span class="theme-status">VYNL+</span>
+              </div>
+            </div>
+            <div class="theme-card pro-theme-card" data-theme="sakura" data-pro="true">
+              <div class="pro-lock-badge">👑 PRO</div>
+              <img src="pinterest_cherry_blossom.png" alt="Sakura Blossom Rain" class="theme-thumb" />
+              <div class="theme-card-info">
+                <span class="theme-name">🌸 Sakura Blossom</span>
+                <span class="theme-status">VYNL+</span>
+              </div>
+            </div>
+            <div class="theme-card pro-theme-card" data-theme="lofi_cafe" data-pro="true">
+              <div class="pro-lock-badge">👑 PRO</div>
+              <img src="pinterest_pixel_coffee.png" alt="Lo-Fi Rainy Cafe" class="theme-thumb" />
+              <div class="theme-card-info">
+                <span class="theme-name">☕ Lo-Fi Rainy Cafe</span>
+                <span class="theme-status">VYNL+</span>
+              </div>
+            </div>
+            <div class="theme-card pro-theme-card" data-theme="sunset_birds" data-pro="true">
+              <div class="pro-lock-badge">👑 PRO</div>
+              <img src="pinterest_pixel_sunset.png" alt="Pixel Sunset Horizon" class="theme-thumb" />
+              <div class="theme-card-info">
+                <span class="theme-name">🩸 Dark Twilight Sunset</span>
+                <span class="theme-status">VYNL+</span>
+              </div>
+            </div>
+            <div class="theme-card pro-theme-card" data-theme="pixel_forest" data-pro="true">
+              <div class="pro-lock-badge">👑 PRO</div>
+              <img src="pinterest_pixel_forest.png" alt="Mystic Pixel Forest" class="theme-thumb" />
+              <div class="theme-card-info">
+                <span class="theme-name">🌲 Mystic Forest Station</span>
+                <span class="theme-status">VYNL+</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Wallpaper & Particle Atmosphere (VYNL+ PRO) -->
+        <div class="theme-section">
+          <div class="theme-section-header">
+            <h3>Custom Wallpaper & Particle FX <span class="vynl-plus-crown-tag">👑 VYNL+</span></h3>
+          </div>
+          <div class="custom-theme-controls">
+            <div class="custom-url-wrap">
+              <input type="text" id="customBgUrlInput" class="search-input" placeholder="Paste custom image wallpaper URL (e.g. https://...)" />
+              <button id="applyCustomBgBtn" class="primary-btn small-btn">Apply Custom Wallpaper</button>
+            </div>
+            <div class="particle-selector-row">
+              <span class="p-select-label">Atmosphere FX:</span>
+              <button class="particle-btn active" data-fx="meteors">☄️ Shooting Stars</button>
+              <button class="particle-btn" data-fx="rain">🌧️ Soothing Rain</button>
+              <button class="particle-btn" data-fx="sakura">🌸 Sakura Petals (PRO)</button>
+              <button class="particle-btn" data-fx="matrix">🟢 Matrix Digital Rain (PRO)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CREATE / EDIT BOARD MODAL ───────────────────── -->
+  <div id="createBoardModal" class="modal-overlay hidden">
+    <div class="modal-backdrop" id="boardModalBackdrop"></div>
+    <div class="modal-card mini-modal-card">
+      <div class="modal-header">
+        <h2 id="boardModalHeading" class="modal-title">✨ Create Music Board</h2>
+        <button id="closeBoardModalBtn" class="close-info-btn">✕</button>
+      </div>
+      <div class="mini-modal-body">
+        <label class="form-label">Board Name:</label>
+        <input type="text" id="newBoardNameInput" class="search-input" placeholder="E.g., Late Night Coding, Midnight Drive..." />
+        
+        <label class="form-label">Vibe Description / Note:</label>
+        <input type="text" id="newBoardDescInput" class="search-input" placeholder="E.g., Dreamy • Late Night • Nostalgic..." />
+
+        <label class="form-label">Board Theme Emoji:</label>
+        <div class="emoji-picker-row">
+          <button class="emoji-chip active">🎧</button>
+          <button class="emoji-chip">🌙</button>
+          <button class="emoji-chip">🌧️</button>
+          <button class="emoji-chip">🚗</button>
+          <button class="emoji-chip">⚡</button>
+          <button class="emoji-chip">🌸</button>
+          <button class="emoji-chip">☕</button>
+          <button class="emoji-chip">💔</button>
+          <button class="emoji-chip">🎮</button>
+        </div>
+
+        <div class="mini-modal-actions">
+          <button id="saveBoardBtn" class="primary-btn">Save Board</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ADD SONG TO BOARD MODAL ─────────────────────── -->
+  <div id="addToBoardModal" class="modal-overlay hidden">
+    <div class="modal-backdrop" id="addToBoardBackdrop"></div>
+    <div class="modal-card mini-modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">➕ Add to Music Board</h2>
+        <button id="closeAddToBoardBtn" class="close-info-btn">✕</button>
+      </div>
+      <div class="mini-modal-body">
+        <p id="addToBoardSongTitle" class="add-song-sub">—</p>
+        <div id="addToBoardList" class="add-to-boards-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VYNL+ PREMIUM TIER SUBSCRIPTION HUB MODAL ────── -->
+  <div id="vynlPlusModal" class="modal-overlay hidden">
+    <div class="modal-backdrop" id="vynlPlusBackdrop"></div>
+    <div class="modal-card plus-modal-card">
+      <div class="plus-modal-header">
+        <div class="plus-hero-badge">
+          <span class="hero-crown">👑</span>
+          <div>
+            <h1 class="plus-hero-title">VYNL<span class="plus-symbol">+</span></h1>
+            <p class="plus-hero-subtitle">Elevate your sonic sanctuary with high-fidelity sound & unlimited vibes</p>
+          </div>
+        </div>
+        <button id="closeVynlPlusBtn" class="close-info-btn">✕</button>
+      </div>
+
+      <div class="plus-modal-body">
+        <!-- Membership Status Badge (If Active) -->
+        <div id="activeSubBanner" class="active-sub-banner hidden">
+          <div class="sub-status-info">
+            <span class="sub-crown-icon">👑</span>
+            <div>
+              <h3 class="sub-title">VYNL+ PRO ACTIVE</h3>
+              <p id="subExpiryText" class="sub-desc">Active Plan • Unlimited Boards & 3D Spatial Audio</p>
+            </div>
+          </div>
+          <button id="demoDowngradeBtn" class="outline-btn small-btn" title="Switch back to Free Tier for testing">
+            Switch to Free Tier (Demo)
+          </button>
+        </div>
+
+        <!-- Pricing Plan Cards: 3 Plans (Monthly ₹99, Annual ₹799, Founder Lifetime ₹699) -->
+        <div class="pricing-cards-grid pricing-3-col">
+          <!-- Plan 1: Monthly Vibe (₹99 / mo) -->
+          <div class="plan-card" id="planCard99" data-plan="monthly_99">
+            <div class="plan-header">
+              <h3 class="plan-name">Monthly Vibe</h3>
+              <div class="plan-price-row">
+                <span class="currency">₹</span>
+                <span class="amount">99</span>
+                <span class="period">/ month</span>
+              </div>
+              <p class="plan-tagline">Start for less than the price of a coffee</p>
+            </div>
+            <ul class="plan-perks-list">
+              <li>✓ Unlimited Custom Boards</li>
+              <li>✓ Advanced Mood AI Generation</li>
+              <li>✓ Unlimited Saved Boards</li>
+              <li>✓ Premium Themes (CRT, Night Cat, Sakura)</li>
+              <li>✓ Advanced Karaoke Studio Pro</li>
+              <li>✓ 3D Spatial Audio & Equalizer</li>
+            </ul>
+            <button class="select-plan-btn active-plan-btn" id="btnSelectPlan99">
+              ✨ Choose ₹99 / Mo
+            </button>
+          </div>
+
+          <!-- Plan 2: Annual Pro Pass (₹799 / yr) -->
+          <div class="plan-card popular-plan" id="planCard799" data-plan="annual_799">
+            <div class="plan-ribbon">SAVE 33%</div>
+            <div class="plan-header">
+              <h3 class="plan-name">Annual Pro</h3>
+              <div class="plan-price-row">
+                <span class="currency">₹</span>
+                <span class="amount">799</span>
+                <span class="period">/ year (~₹66/mo)</span>
+              </div>
+              <p class="plan-tagline">Best value for daily music & focus flow</p>
+            </div>
+            <ul class="plan-perks-list">
+              <li>✓ Everything in Monthly Vibe</li>
+              <li>✓ Custom Board Artwork Upload</li>
+              <li>✓ Advanced Profile Customization</li>
+              <li>✓ Full Mood History & Analytics</li>
+              <li>✓ 33% Annual Savings</li>
+            </ul>
+            <button class="select-plan-btn" id="btnSelectPlan799">
+              ⭐ Choose ₹799 / Yr
+            </button>
+          </div>
+
+          <!-- Plan 3: Founder's Lifetime Pass (₹699 one-time) -->
+          <div class="plan-card founder-plan" id="planCard699" data-plan="founder_699">
+            <div class="plan-ribbon founder-ribbon">🔥 FIRST 100 USERS</div>
+            <div class="plan-header">
+              <h3 class="plan-name">Founder's Pass</h3>
+              <div class="plan-price-row">
+                <span class="currency">₹</span>
+                <span class="amount">699</span>
+                <span class="period">lifetime (one-time)</span>
+              </div>
+              <p class="plan-tagline">Pay once, own all current & future VYNL+ features forever</p>
+            </div>
+            <ul class="plan-perks-list">
+              <li>✓ Permanent Lifetime VYNL+ Access</li>
+              <li>✓ Exclusive Founder Profile Badge 🏆</li>
+              <li>✓ All Future Theme & AI Drops Included</li>
+              <li>✓ No Recurring Subscriptions</li>
+              <li>✓ Priority Stream Delivery</li>
+            </ul>
+            <button class="select-plan-btn founder-btn" id="btnSelectPlan699">
+              👑 Claim ₹699 Lifetime
+            </button>
+          </div>
+        </div>
+
+        <!-- ── FEATURE COMPARISON MATRIX TABLE (ROADMAP SPEC) ── -->
+        <div class="matrix-section">
+          <h3 class="matrix-heading">Tier Feature Breakdown</h3>
+          <div class="matrix-table-wrap">
+            <table class="matrix-table">
+              <thead>
+                <tr>
+                  <th class="col-feature">Feature</th>
+                  <th class="col-free">🆓 Free</th>
+                  <th class="col-plus">⭐ VYNL+</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Mood discovery</td>
+                  <td class="check">✅</td>
+                  <td class="check">✅</td>
+                </tr>
+                <tr>
+                  <td>Song search & YouTube playback</td>
+                  <td class="check">✅</td>
+                  <td class="check">✅</td>
+                </tr>
+                <tr>
+                  <td>Saved songs library</td>
+                  <td class="check">✅</td>
+                  <td class="check">✅</td>
+                </tr>
+                <tr>
+                  <td>Shareable board URLs</td>
+                  <td class="check">✅</td>
+                  <td class="check">✅</td>
+                </tr>
+                <tr>
+                  <td>Basic visual themes</td>
+                  <td class="check">✅</td>
+                  <td class="check">✅</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>Custom boards allowance</td>
+                  <td class="cross">3 Boards</td>
+                  <td class="check">✅ Unlimited</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>Advanced conversational mood AI</td>
+                  <td class="cross">❌</td>
+                  <td class="check">✅</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>Premium themes (CRT, Night Cat, Sakura, Gothic, Space)</td>
+                  <td class="cross">❌</td>
+                  <td class="check">✅</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>Custom board artwork & wallpaper upload</td>
+                  <td class="cross">❌</td>
+                  <td class="check">✅</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>Mood history log & analytics</td>
+                  <td class="cross">❌</td>
+                  <td class="check">✅</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>Advanced karaoke (Vocal Cut, Pitch & 3D Spatial Audio)</td>
+                  <td class="cross">❌</td>
+                  <td class="check">✅</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td>Profile customization & Founder badge</td>
+                  <td class="cross">❌</td>
+                  <td class="check">✅</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Interactive Checkout & Instant Activation Section -->
+        <div class="checkout-box">
+          <div class="checkout-header">
+            <h4>⚡ Instant Activation & Promo Pass</h4>
+            <p>Upgrade now or test instantly with a complimentary VIP promo code.</p>
+          </div>
+
+          <div class="promo-code-row">
+            <input type="text" id="promoCodeInput" class="search-input promo-input" placeholder="Enter Promo Code (Try 'FOUNDER', 'VYNLPLUS', or 'VIP')" />
+            <button id="applyPromoBtn" class="outline-btn small-btn">Apply Code</button>
+          </div>
+
+          <div class="payment-methods-row">
+            <button class="pay-method-btn active" data-method="upi">⚡ UPI / GPay</button>
+            <button class="pay-method-btn" data-method="card">💳 Card</button>
+            <button class="pay-method-btn" data-method="netbanking">🏦 NetBanking</button>
+          </div>
+
+          <button id="activatePlusBtn" class="primary-btn checkout-activate-btn">
+            <span id="activatePlusBtnText">👑 Activate VYNL+ (₹99/mo)</span>
+            <div id="activateSpinner" class="spinner hidden"></div>
+          </button>
+          <p class="checkout-guarantee">🔒 100% Secure Simulated Checkout • Cancel Anytime with 1-Click</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VYNL LOGO RIGHT-CLICK CUSTOM CONTEXT MENU ────── -->
+  <div id="vynlContextMenu" class="vynl-context-menu hidden">
+    <div class="context-menu-header">
+      <img src="logo_cat.jpg" class="context-logo-img" alt="VYNL Logo" />
+      <span class="context-title">VYNL Options</span>
+    </div>
+    <div class="context-menu-divider"></div>
+    <button id="ctxOpenNewTab" class="context-menu-item" title="Open VYNL App in a new browser tab">
+      <span class="ctx-icon">🚀</span> Open VYNL in New Tab
+    </button>
+    <button id="ctxOpenCurrentSong" class="context-menu-item" title="Open current song on YouTube Music in a new tab">
+      <span class="ctx-icon">🎵</span> Open Song on YouTube ↗
+    </button>
+    <button id="ctxOpenLyrics" class="context-menu-item" title="Open Genius song lyrics in a new tab">
+      <span class="ctx-icon">🎤</span> Open Lyrics on Genius ↗
+    </button>
+    <button id="ctxCopyLink" class="context-menu-item" title="Copy current app link to clipboard">
+      <span class="ctx-icon">🔗</span> Copy Link to Clipboard
+    </button>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div id="vynlToastContainer" class="vynl-toast-container"></div>
+
+  <!-- Load app.js first so window.onYouTubeIframeAPIReady is defined when iframe_api script loads -->
+  <script src="app.js?v=2"></script>
+
+  <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
